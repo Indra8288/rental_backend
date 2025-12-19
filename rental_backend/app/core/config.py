@@ -3,12 +3,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/rental_db"
-
+    DATABASE_URL: str = "postgresql+psycopg2://rental_user:CHANGE_ME@localhost:5432/rental_db"
     JWT_SECRET: str = "CHANGE_ME"
     JWT_ALG: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
-
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 720
     UPLOAD_DIR: str = "./uploads"
 
     SEED_OWNER_USERNAME: str = "owner"

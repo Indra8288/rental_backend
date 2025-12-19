@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from app.schemas.common import APIModel
 
-class DashboardOut(BaseModel):
+class DashboardOut(APIModel):
+    house_id: int
     date_key: str
-    total_collected_amount: float
-    total_collected_water: float
-    total_collected_electric: float
+    total_collected_usd: float
+    total_water_khr: float
+    total_elect_khr: float
     collected_rooms: int
     uncollected_rooms: int

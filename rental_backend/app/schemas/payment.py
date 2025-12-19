@@ -1,16 +1,15 @@
 from datetime import date
 from pydantic import BaseModel, Field
 from app.schemas.common import APIModel
-from app.models.enums import PaymentType, PaymentStatus
 
 class PaymentCreate(BaseModel):
-    date_key: str  # YYYY-MM
-    amount: float = Field(gt=0)
+    date_key: str
+    amount_usd: float = Field(gt=0)
     payment_date: date
 
 class PartlyPayCreate(BaseModel):
     date_key: str
-    amount: float = Field(gt=0)
+    amount_usd: float = Field(gt=0)
     payment_date: date
     promise_date: date
 
@@ -19,13 +18,13 @@ class PaymentAccept(BaseModel):
 
 class RoomPaymentOut(APIModel):
     id: int
-    room_no: str
-    total_payment: float
-    total_water: float
-    total_elect: float
-    payment_date: date | None = None
-    remaining: float
+    room_id: str
+    total_payment_usd: float
+    remaining_usd: float
+    total_water_khr: float
+    total_elect_khr: float
     payment_type: str
-    date_key: str
     status: str
+    date_key: str
+    payment_date: date | None = None
     promise_date: date | None = None

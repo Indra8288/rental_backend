@@ -1,40 +1,31 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 from datetime import date
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from app.db.session import get_db
-from app.api.deps import require_roles
-from app.models.enums import Role, PaymentStatus
+from app.api.deps import get_current_user, assert_house_access
+from app.models.enums import Role
 from app.schemas.dashboard import DashboardOut
-from app.models.room_payment import RoomPayment
-from app.models.room import Room
+from app.crud.dashboard import house_dashboard
 from app.utils.date_key import to_date_key
 
-router = APIRouter(prefix="/dashboard")
+router = APIRouter(prefix="/api/v1/houses/{house_id}/dashboard")
 
 @router.get("", response_model=DashboardOut)
-def get_dashboard(date_key: str | None = None, db: Session = Depends(get_db), _=Depends(require_roles(Role.owner, Role.admin))):
+def dashboard(house_id: int, date_key: str | None = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    assert_house_access(db, user, house_id)
+    if user.role not in (Role.owner.value, Role.admin.value):
+        raise HTTPException(status_code=403, detail="Forbidden")
     if date_key is None:
         date_key = to_date_key(date.today())
 
-    total_collected_amount = db.query(func.coalesce(func.sum(RoomPayment.total_payment), 0.0)).filter(RoomPayment.date_key == date_key).scalar() or 0.0
-    total_collected_water = db.query(func.coalesce(func.sum(RoomPayment.total_water), 0.0)).filter(RoomPayment.date_key == date_key).scalar() or 0.0
-    total_collected_electric = db.query(func.coalesce(func.sum(RoomPayment.total_elect), 0.0)).filter(RoomPayment.date_key == date_key).scalar() or 0.0
-
-    paid_rooms = db.query(func.count(RoomPayment.id)).filter(
-        RoomPayment.date_key == date_key,
-        RoomPayment.remaining == 0,
-        RoomPayment.status == PaymentStatus.accepted.value
-    ).scalar() or 0
-
-    total_rooms = db.query(func.count(Room.room_no)).scalar() or 0
-    uncollected = max(0, total_rooms - paid_rooms)
-
+    total_collected_usd, total_water_khr, total_elect_khr, collected_rooms, uncollected_rooms = house_dashboard(db, house_id, date_key)
     return DashboardOut(
+        house_id=house_id,
         date_key=date_key,
-        total_collected_amount=float(total_collected_amount),
-        total_collected_water=float(total_collected_water),
-        total_collected_electric=float(total_collected_electric),
-        collected_rooms=int(paid_rooms),
-        uncollected_rooms=int(uncollected),
+        total_collected_usd=total_collected_usd,
+        total_water_khr=total_water_khr,
+        total_elect_khr=total_elect_khr,
+        collected_rooms=collected_rooms,
+        uncollected_rooms=uncollected_rooms,
     )

@@ -1,7 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
 from app.schemas.common import APIModel
-from app.models.enums import IssueType, IssueStatus
+from app.models.enums import IssueType
 
 class IssueCreate(BaseModel):
     issue_type: IssueType
@@ -9,7 +9,8 @@ class IssueCreate(BaseModel):
 
 class IssueOut(APIModel):
     id: int
-    room_no: str
+    house_id: int
+    room_id: str
     created_by_user_id: int
     issue_type: str
     details: str

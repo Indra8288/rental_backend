@@ -10,18 +10,14 @@ def create_issue(db: Session, issue: IssueTicket) -> IssueTicket:
     db.refresh(issue)
     return issue
 
-def list_issues(
-    db: Session,
-    *,
-    room_no: str | None = None,
-    user_id: int | None = None,
-    status: str | None = None,  # "OPENING" | "ACCEPTED" | "RESOLVED" | None
-) -> list[IssueTicket]:
-    q = db.query(IssueTicket)
-    if room_no:
-        q = q.filter(IssueTicket.room_no == room_no)
-    if user_id:
-        q = q.filter(IssueTicket.created_by_user_id == user_id)
+def list_issues(db: Session, *, house_id: int, status: str | None = None) -> list[IssueTicket]:
+    q = db.query(IssueTicket).filter(IssueTicket.house_id == house_id)
+    if status:
+        q = q.filter(IssueTicket.status == status)
+    return q.order_by(IssueTicket.created_at.desc()).all()
+
+def list_my_issues(db: Session, *, user_id: int, house_id: int, status: str | None = None) -> list[IssueTicket]:
+    q = db.query(IssueTicket).filter(IssueTicket.created_by_user_id == user_id, IssueTicket.house_id == house_id)
     if status:
         q = q.filter(IssueTicket.status == status)
     return q.order_by(IssueTicket.created_at.desc()).all()

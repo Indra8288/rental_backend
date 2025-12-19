@@ -1,9 +1,5 @@
-from pydantic import BaseModel
+from app.schemas.common import APIModel
 
-class Token(BaseModel):
+class Token(APIModel):
     access_token: str
     token_type: str = "bearer"
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str

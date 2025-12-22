@@ -171,8 +171,11 @@ def room_bill(house_id: int, room_id: str, date_key: str, db: Session = Depends(
         db.query(func.coalesce(func.sum(Electric.price_khr), 0.0)).filter(Electric.room_id == room_id, Electric.date_key == date_key).scalar() or 0.0
     )
 
-    total_usd = float(r.price_usd + ((total_water_khr + total_elect_khr) / 4000))
-    total_khr = float(total_water_khr + total_elect_khr + (r.price_usd * 4000))
+    room_price_khr = float(r.price_usd * 4000)
+    debt_khr = float(r.debt or 0.0)
+
+    total_khr = float(room_price_khr + total_water_khr + total_elect_khr + debt_khr)
+    total_usd = float(total_khr / 4000)
 
     return RoomBillInfo(
         room_id=r.room_id,

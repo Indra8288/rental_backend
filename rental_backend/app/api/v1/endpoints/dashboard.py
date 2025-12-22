@@ -19,10 +19,11 @@ def dashboard(house_id: int, date_key: str | None = None, db: Session = Depends(
     if date_key is None:
         date_key = to_date_key(date.today())
 
-    total_collected_usd, total_water_khr, total_elect_khr, collected_rooms, uncollected_rooms = house_dashboard(db, house_id, date_key)
+    total_collected_khr, total_collected_usd, total_water_khr, total_elect_khr, collected_rooms, uncollected_rooms = house_dashboard(db, house_id, date_key)
     return DashboardOut(
         house_id=house_id,
         date_key=date_key,
+        total_collected_khr=total_collected_khr,
         total_collected_usd=total_collected_usd,
         total_water_khr=total_water_khr,
         total_elect_khr=total_elect_khr,

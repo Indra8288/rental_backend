@@ -7,3 +7,6 @@ class HouseOut(APIModel):
     house_id: int
     house_name: str
     owner_id: int
+
+class HouseUpdate(APIModel):
+    house_name: str

@@ -24,3 +24,15 @@ class CustomerOut(APIModel):
     status: str
     remark: str | None
     id_link: str | None
+
+from datetime import date
+
+class CustomerUpdate(APIModel):
+    name: str | None = None
+    phone_no: str | None = None
+    dob: date | None = None
+    start_date: date | None = None
+    telegram: str | None = None
+    remark: str | None = None
+    id_link: str | None = None
+    status: str | None = None

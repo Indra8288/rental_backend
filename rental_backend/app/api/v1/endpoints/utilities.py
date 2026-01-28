@@ -2,17 +2,24 @@ from datetime import date
 from io import BytesIO
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 import pandas as pd
 
 from app.db.session import get_db
 from app.api.deps import get_current_user, assert_house_access
 from app.models.enums import Role
-from app.schemas.utilities import ElectricCreate, WaterCreate, UtilityOut
+from app.schemas.utilities import (
+    ElectricCreate,
+    WaterCreate,
+    UtilityOut,
+    ElectricLastMonthOut,
+    WaterLastMonthOut,
+)
 from app.models.electric import Electric
 from app.models.water import Water
-from app.crud.rooms import get_room
+from app.crud.rooms import get_room, list_rooms
 from app.crud.utilities import create_electric, create_water, last_water_num
-from app.utils.date_key import to_date_key
+from app.utils.date_key import to_date_key, prev_month_key
 
 router = APIRouter(prefix="/api/v1/houses/{house_id}/utilities")
 
@@ -126,3 +133,74 @@ def upload_water_excel(house_id: int, file: UploadFile = File(...), db: Session 
         created += 1
 
     return {"created": created, "date_key": date_key}
+
+
+@router.get("/electric/last-month", response_model=list[ElectricLastMonthOut])
+def last_month_electric(house_id: int, date_key: str | None = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """
+    List all rooms and return the latest electricity number + price for LAST MONTH.
+
+    - If date_key is omitted, uses current month and computes previous month automatically.
+    - Uses the latest record in that month (by report_date desc, id desc).
+    """
+    assert_house_access(db, user, house_id)
+    if user.role not in (Role.owner.value, Role.admin.value):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if date_key is None:
+        date_key = to_date_key(date.today())
+    target_key = prev_month_key(date_key)
+
+    out: list[ElectricLastMonthOut] = []
+    for r in list_rooms(db, house_id):
+        rec = (
+            db.query(Electric)
+            .filter(Electric.room_id == r.room_id, Electric.date_key == target_key)
+            .order_by(desc(Electric.report_date), desc(Electric.id))
+            .first()
+        )
+        out.append(
+            ElectricLastMonthOut(
+                room_id=r.room_id,
+                room_no=r.room_no,
+                date_key=target_key,
+                current_num=rec.current_num if rec else None,
+                price_khr=float(rec.price_khr) if rec else None,
+            )
+        )
+    return out
+
+
+@router.get("/water/last-month", response_model=list[WaterLastMonthOut])
+def last_month_water(house_id: int, date_key: str | None = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """
+    List all rooms and return the latest water number for LAST MONTH.
+
+    - If date_key is omitted, uses current month and computes previous month automatically.
+    - Uses the latest record in that month (by report_date desc, id desc).
+    """
+    assert_house_access(db, user, house_id)
+    if user.role not in (Role.owner.value, Role.admin.value):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    if date_key is None:
+        date_key = to_date_key(date.today())
+    target_key = prev_month_key(date_key)
+
+    out: list[WaterLastMonthOut] = []
+    for r in list_rooms(db, house_id):
+        rec = (
+            db.query(Water)
+            .filter(Water.room_id == r.room_id, Water.date_key == target_key)
+            .order_by(desc(Water.report_date), desc(Water.id))
+            .first()
+        )
+        out.append(
+            WaterLastMonthOut(
+                room_id=r.room_id,
+                room_no=r.room_no,
+                date_key=target_key,
+                current_num=rec.current_num if rec else None,
+            )
+        )
+    return out

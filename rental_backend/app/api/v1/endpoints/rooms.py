@@ -107,9 +107,23 @@ def status_cards(house_id: int, date_key: str | None = None, db: Session = Depen
     cards: list[RoomStatusCard] = []
     for r in list_rooms(db, house_id):
         rp = get_payment(db, r.room_id, date_key)
+
+        # Currency rule:
+        # - debt is stored in KHR
+        # - room price USD converted to KHR (rate=4000) when combined
         if rp is None:
-            remaining = float(r.price_usd + r.debt)
-            cards.append(RoomStatusCard(room_id=r.room_id, room_no=r.room_no, color="white", status_text="OPENING", remaining_usd=remaining))
+            remaining_khr = float((r.price_usd * 4000) + float(r.debt or 0.0))
+            cards.append(
+                RoomStatusCard(
+                    room_id=r.room_id,
+                    room_no=r.room_no,
+                    color="white",
+                    status_text="OPENING",
+                    payment_status="OPENING",
+                    remaining_khr=remaining_khr,
+                    remaining_usd=float(remaining_khr / 4000),
+                )
+            )
             continue
 
         if rp.status == PaymentStatus.opening.value:
@@ -123,9 +137,21 @@ def status_cards(house_id: int, date_key: str | None = None, db: Session = Depen
         else:
             color = "white"
 
-        cards.append(RoomStatusCard(room_id=r.room_id, room_no=r.room_no, color=color, status_text=rp.status, remaining_usd=float(rp.remaining_usd)))
+        remaining_khr = float(rp.remaining_usd)  # remaining_usd column holds KHR (v4.1+)
+        cards.append(
+            RoomStatusCard(
+                room_id=r.room_id,
+                room_no=r.room_no,
+                color=color,
+                status_text=rp.status,
+                payment_status=rp.status,
+                remaining_khr=remaining_khr,
+                remaining_usd=float(remaining_khr / 4000),
+            )
+        )
 
     return cards
+
 
 @router.get("/{room_id}/qr")
 def room_qr(house_id: int, room_id: str, db: Session = Depends(get_db), user=Depends(get_current_user)):

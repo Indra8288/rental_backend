@@ -17,8 +17,16 @@ class RoomOut(APIModel):
 class RoomStatusCard(APIModel):
     room_id: str
     room_no: str
+
+    # UI helper: Green=accepted, Blue=in_progress, White=opening, Red=debt
     color: str
+
+    # Kept for backward compatibility
     status_text: str
+
+    # New fields
+    payment_status: str
+    remaining_khr: float
     remaining_usd: float
 
 class RoomBillInfo(APIModel):

@@ -18,3 +18,16 @@ class UtilityOut(APIModel):
     report_date: date
     date_key: str
     price_khr: float
+
+class ElectricLastMonthOut(APIModel):
+    room_id: str
+    room_no: str
+    date_key: str
+    current_num: int | None
+    price_khr: float | None
+
+class WaterLastMonthOut(APIModel):
+    room_id: str
+    room_no: str
+    date_key: str
+    current_num: int | None
